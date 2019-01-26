@@ -7,6 +7,10 @@ edition = "2018"
 [dependencies]
 scrap = "0.5"
 repng = "0.2.2"
+gtk = "0.4.0"
+gdk-pixbuf = "0.4.0"
+relm = "0.14.6"
+relm-derive = "0.14.6"
 
 [[bin]]
 name = "server"

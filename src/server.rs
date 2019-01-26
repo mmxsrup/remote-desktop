@@ -9,7 +9,7 @@ use std::io::Write;
 
 fn send_images(mut stream: TcpStream) {
 	let one_second = Duration::new(1, 0);
-	let one_frame = one_second / 60;
+	let one_frame = one_second / 10;
 
 	let display = Display::primary().expect("Couldn't find primary display.");
 	let mut capturer = Capturer::new(display).expect("Couldn't begin capture.");
@@ -49,9 +49,8 @@ fn send_images(mut stream: TcpStream) {
 			}
 		}
 
-		// println!("{:?}", bitflipped);
 		stream.write(&bitflipped).unwrap();
-		break;
+		thread::sleep(one_frame);
 	}
 }
 
