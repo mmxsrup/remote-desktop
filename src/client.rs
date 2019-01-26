@@ -1,3 +1,4 @@
+
 extern crate repng;
 extern crate gtk;
 extern crate gdk_pixbuf;
@@ -55,6 +56,8 @@ struct Model {
 #[derive(Msg)]
 enum Msg {
 	Draw,
+	Mouse((f64, f64)),
+	Key((u32)),
 	Quit,
 }
 
@@ -103,6 +106,12 @@ impl Update for Win {
 					self.model.width * 4);
 				self.image.set_from_pixbuf(&pixbuf);
 			},
+			Msg::Mouse(pos) => {
+				println!("Mouse {:?}", pos);
+			},
+			Msg::Key(keyval) => {
+				println!("Key {:?}", keyval);
+			},
 			Msg::Quit => gtk::main_quit(),
 		}
 	}
@@ -130,6 +139,12 @@ impl Widget for Win {
 		let window = Window::new(WindowType::Toplevel);
 		window.add(&vbox);
 
+		// Event when mouse button pressed
+		connect!(relm, window, connect_button_press_event(_, event),
+			return(Some(Msg::Mouse(event.get_position())), Inhibit(false)));
+		// Event when pressing keyboard
+		connect!(relm, window, connect_key_press_event(_, event),
+			return(Some(Msg::Key(event.get_keyval())), Inhibit(false)));
 		connect!(relm, window, connect_delete_event(_, _), return (Some(Msg::Quit), Inhibit(false)));
 
 		window.show_all();
