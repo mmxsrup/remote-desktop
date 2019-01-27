@@ -1,13 +1,17 @@
 extern crate scrap;
+extern crate enigo;
 
 use scrap::{Capturer, Display};
 use std::io::ErrorKind::WouldBlock;
 use std::thread;
 use std::time::Duration;
 use std::net::{TcpListener, TcpStream};
-use std::io::Write;
+use std::io::{Write, BufWriter, Read, BufReader};
+use enigo::{Enigo, KeyboardControllable, Key,  MouseControllable};
 
-fn send_images(mut stream: TcpStream) {
+
+fn send_images(writer: &mut BufWriter<TcpStream>) {
+
 	let one_second = Duration::new(1, 0);
 	let one_frame = one_second / 10;
 
@@ -17,8 +21,6 @@ fn send_images(mut stream: TcpStream) {
 	println!("{} {}", w, h);
 
 	loop {
-		// Wait until there's a frame.
-
 		// buffer is ARGB image
 		let buffer = match capturer.frame() {
 			Ok(buffer) => buffer,
@@ -33,7 +35,7 @@ fn send_images(mut stream: TcpStream) {
 			}
 		};
 
-        // Flip the ARGB image into a BGRA image.
+		// Flip the ARGB image into a BGRA image.
 		let mut bitflipped = Vec::with_capacity(w * h * 4);
 		let stride = buffer.len() / h;
 
@@ -49,8 +51,39 @@ fn send_images(mut stream: TcpStream) {
 			}
 		}
 
-		stream.write(&bitflipped).unwrap();
+		writer.write(&bitflipped).unwrap();
 		thread::sleep(one_frame);
+	}
+}
+
+fn recv_commands(reader: &mut BufReader<TcpStream>) {
+
+	let mut enigo = Enigo::new();
+
+	loop {
+		let mut buf = [0u8; 12];
+		reader.read_exact(&mut buf).unwrap();
+		println!("recv buf {:?}", buf);
+
+		let command: char = buf[0] as char;
+		match command {
+			'K' => {
+				println!("command K");
+				let key_ascii_val: char = buf[1] as char;
+				enigo.key_click(Key::Layout(key_ascii_val));
+			},
+			'M' => {
+				print!("command M");
+				let y: u32 = ((buf[4] as u32) << 24) + ((buf[5] as u32) << 16) +
+							  ((buf[6] as u32) <<  8) + ((buf[7] as u32) <<  0);
+				let x: u32 = ((buf[8] as u32) << 24) + ((buf[9] as u32) << 16) +
+							  ((buf[10] as u32) << 8) + ((buf[11] as u32) << 0);
+				enigo.mouse_move_to(y as i32, x as i32);
+			}
+			_ => {
+				println!("Non command");
+			}
+		}
 	}
 }
 
@@ -65,9 +98,15 @@ fn main() {
 			Ok(stream) => {
 				// Connection succeeded
 				println!("New connection: {}", stream.peer_addr().unwrap());
-				// thread::spawn(move || {
-					send_images(stream);
-				// });
+				let mut writer = BufWriter::new(stream.try_clone().unwrap());
+				let mut reader = BufReader::new(stream);
+
+				thread::spawn(move || {
+					send_images(&mut writer);
+				});
+				thread::spawn(move || {
+					recv_commands(&mut reader);
+				});
 			}
 			Err(e) => {
 				// Connection failed

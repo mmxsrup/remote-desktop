@@ -1,4 +1,3 @@
-
 extern crate repng;
 extern crate gtk;
 extern crate gdk_pixbuf;
@@ -8,7 +7,7 @@ extern crate relm;
 extern crate relm_derive;
 
 use std::net::TcpStream;
-use std::io::Read;
+use std::io::{Read, Write};
 use relm::{Relm, Update, Widget, interval};
 use gtk::prelude::*;
 use gtk::{Window, Inhibit, WindowType, Image, ImageExt, Label};
@@ -108,9 +107,26 @@ impl Update for Win {
 			},
 			Msg::Mouse(pos) => {
 				println!("Mouse {:?}", pos);
+				let y = pos.0 as i32;
+				let x = pos.1 as i32;
+				let mut buf = [0u8; 12];
+				buf[0] = 'M' as u8;
+				buf[4] = ((y >> 24) & 0xff) as u8;
+				buf[5] = ((y >> 16) & 0xff) as u8;
+				buf[6] = ((y >>  8) & 0xff) as u8;
+				buf[7] = (y & 0xff) as u8;
+				buf[8] = ((x >> 24) & 0xff) as u8;
+				buf[9] = ((x >> 16) & 0xff) as u8;
+				buf[10] = ((x >>  8) & 0xff) as u8;
+				buf[11] = (x & 0xff) as u8;
+				self.model.stream.write(&buf).unwrap();
 			},
 			Msg::Key(keyval) => {
 				println!("Key {:?}", keyval);
+				let mut buf = [0u8; 12];
+				buf[0] = 'K' as u8;
+				buf[1] = keyval as u8;
+				self.model.stream.write(&buf).unwrap();
 			},
 			Msg::Quit => gtk::main_quit(),
 		}
