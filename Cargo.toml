@@ -12,6 +12,9 @@ gdk-pixbuf = "0.4.0"
 relm = "0.14.6"
 relm-derive = "0.14.6"
 enigo = "0.0.12"
+serde_derive = "1.0.85"
+serde = "1.0.85"
+serde_json = "1.0.37"
 
 [[bin]]
 name = "server"

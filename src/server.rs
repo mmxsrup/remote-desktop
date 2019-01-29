@@ -1,14 +1,26 @@
 extern crate scrap;
 extern crate enigo;
+#[macro_use]
+extern crate serde_derive;
+extern crate serde;
+extern crate serde_json;
 
 use scrap::{Capturer, Display};
 use std::io::ErrorKind::WouldBlock;
 use std::thread;
 use std::time::Duration;
 use std::net::{TcpListener, TcpStream};
-use std::io::{Write, BufWriter, Read, BufReader};
+use std::io::{Write, BufWriter, BufReader};
 use enigo::{Enigo, KeyboardControllable, Key,  MouseControllable};
+use std::io::prelude::*;
 
+
+#[derive(Serialize, Deserialize, Debug)]
+struct Command {
+	name: char,
+	keyval: u8, // for command K(Key)
+	pos: (i32, i32), // for command M(Mouse)
+}
 
 fn send_images(writer: &mut BufWriter<TcpStream>) {
 
@@ -61,25 +73,20 @@ fn recv_commands(reader: &mut BufReader<TcpStream>) {
 	let mut enigo = Enigo::new();
 
 	loop {
-		let mut buf = [0u8; 12];
-		reader.read_exact(&mut buf).unwrap();
+		let mut buf = String::new();
+		reader.read_line(&mut buf).unwrap();
 		println!("recv buf {:?}", buf);
 
-		let command: char = buf[0] as char;
-		match command {
+		let command: Command = serde_json::from_str(&buf).unwrap();
+		match command.name {
 			'K' => {
 				println!("command K");
-				let key_ascii_val: char = buf[1] as char;
-				enigo.key_click(Key::Layout(key_ascii_val));
+				enigo.key_click(Key::Layout(command.keyval as char));
 			},
 			'M' => {
-				print!("command M");
-				let y: u32 = ((buf[4] as u32) << 24) + ((buf[5] as u32) << 16) +
-							  ((buf[6] as u32) <<  8) + ((buf[7] as u32) <<  0);
-				let x: u32 = ((buf[8] as u32) << 24) + ((buf[9] as u32) << 16) +
-							  ((buf[10] as u32) << 8) + ((buf[11] as u32) << 0);
-				enigo.mouse_move_to(y as i32, x as i32);
-			}
+				println!("command M");
+				enigo.mouse_move_to(command.pos.0, command.pos.1)
+			},
 			_ => {
 				println!("Non command");
 			}

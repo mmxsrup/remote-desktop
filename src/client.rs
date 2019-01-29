@@ -5,6 +5,11 @@ extern crate gdk_pixbuf;
 extern crate relm;
 #[macro_use]
 extern crate relm_derive;
+#[macro_use]
+extern crate serde_derive;
+extern crate serde;
+extern crate serde_json;
+
 
 use std::net::TcpStream;
 use std::io::{Read, Write};
@@ -60,6 +65,13 @@ enum Msg {
 	Quit,
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+struct Command {
+	name: char,
+	keyval: u8, // for name K(Key)
+	pos: (i32, i32), // for name M(Mouse)
+}
+
 struct Win {
 	image: Image,
 	model: Model,
@@ -107,26 +119,25 @@ impl Update for Win {
 			},
 			Msg::Mouse(pos) => {
 				println!("Mouse {:?}", pos);
-				let y = pos.0 as i32;
-				let x = pos.1 as i32;
-				let mut buf = [0u8; 12];
-				buf[0] = 'M' as u8;
-				buf[4] = ((y >> 24) & 0xff) as u8;
-				buf[5] = ((y >> 16) & 0xff) as u8;
-				buf[6] = ((y >>  8) & 0xff) as u8;
-				buf[7] = (y & 0xff) as u8;
-				buf[8] = ((x >> 24) & 0xff) as u8;
-				buf[9] = ((x >> 16) & 0xff) as u8;
-				buf[10] = ((x >>  8) & 0xff) as u8;
-				buf[11] = (x & 0xff) as u8;
-				self.model.stream.write(&buf).unwrap();
+				let command = Command {
+					name: 'M',
+					keyval: 0,
+					pos: (pos.0 as i32, pos.1 as i32)
+				};
+				let json_str = serde_json::to_string(&command).unwrap() + "\n";
+				println!("Serialized Json = {}", json_str);
+				self.model.stream.write(json_str.as_bytes()).unwrap();
 			},
 			Msg::Key(keyval) => {
 				println!("Key {:?}", keyval);
-				let mut buf = [0u8; 12];
-				buf[0] = 'K' as u8;
-				buf[1] = keyval as u8;
-				self.model.stream.write(&buf).unwrap();
+				let command = Command {
+					name: 'K',
+					keyval: keyval as u8,
+					pos: (0, 0),
+				};
+				let json_str = serde_json::to_string(&command).unwrap() + "\n";
+				println!("Serialized Json = {}", json_str);
+				self.model.stream.write(json_str.as_bytes()).unwrap();
 			},
 			Msg::Quit => gtk::main_quit(),
 		}
