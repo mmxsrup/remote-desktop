@@ -15,10 +15,9 @@ use std::net::TcpStream;
 use std::io::{Read, Write};
 use relm::{Relm, Update, Widget, interval};
 use gtk::prelude::*;
-use gtk::{Window, Inhibit, WindowType, Image, ImageExt, Label};
-use gdk_pixbuf::{Pixbuf, Colorspace,};
+use gtk::{Window, Inhibit, WindowType, Image, ImageExt};
+use gdk_pixbuf::{Pixbuf, Colorspace, InterpType, PixbufExt};
 use gtk::Orientation::Vertical;
-
 
 fn connect() -> TcpStream {
 	println!("connect");
@@ -55,6 +54,7 @@ struct Model {
 	stream: TcpStream,
 	width: i32,
 	height: i32,
+	ratio: f32,
 }
 
 #[derive(Msg)]
@@ -93,6 +93,7 @@ impl Update for Win {
 			stream: stream,
 			width: 1920,
 			height: 1080,
+			ratio: 0.8,
 		}
 	}
 
@@ -115,14 +116,19 @@ impl Update for Win {
 					self.model.width,
 					self.model.height,
 					self.model.width * 4);
-				self.image.set_from_pixbuf(&pixbuf);
+				let pixbuf_small = pixbuf.scale_simple(
+					(self.model.width as f32 * self.model.ratio) as i32,
+					(self.model.height as f32 * self.model.ratio) as i32,
+					InterpType::Bilinear);
+				self.image.set_from_pixbuf(&pixbuf_small);
 			},
 			Msg::Mouse(pos) => {
 				println!("Mouse {:?}", pos);
 				let command = Command {
 					name: 'M',
 					keyval: 0,
-					pos: (pos.0 as i32, pos.1 as i32)
+					pos: ((pos.0 as f32 / self.model.ratio) as i32,
+						  (pos.1 as f32 / self.model.ratio) as i32)
 				};
 				let json_str = serde_json::to_string(&command).unwrap() + "\n";
 				println!("Serialized Json = {}", json_str);
