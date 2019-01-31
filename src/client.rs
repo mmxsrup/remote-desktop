@@ -163,9 +163,6 @@ impl Widget for Win {
 	fn view(relm: &Relm<Self>, model: Self::Model) -> Self {
 		let vbox = gtk::Box::new(Vertical, 0);
 
-		let state_label = Label::new("Remote Desktop");
-		vbox.add(&state_label);
-
 		let image = Image::new();
 		vbox.add(&image);
 
