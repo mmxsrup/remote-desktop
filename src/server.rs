@@ -81,9 +81,18 @@ fn recv_commands(reader: &mut BufReader<TcpStream>) {
 		let command: Command = serde_json::from_str(&buf).unwrap();
 		match command.name {
 			'K' => {
-				println!("command K");
-				enigo.key_click(Key::Layout(command.keyval as char));
-			},
+				println!("command K {:?}", command.keyval);
+				match command.keyval {
+					8   => enigo.key_click(Key::Backspace), // Error
+					9   => enigo.key_click(Key::Tab),
+					13  => enigo.key_click(Key::Return),
+					32  => enigo.key_click(Key::Space), // Error
+					225 => enigo.key_click(Key::Shift),
+					227 => enigo.key_click(Key::Control),
+					233 => enigo.key_click(Key::Alt),
+					_   => enigo.key_click(Key::Layout(command.keyval as char))
+				}
+		},
 			'M' => {
 				println!("command M");
 				enigo.mouse_move_to(command.pos.0, command.pos.1);
