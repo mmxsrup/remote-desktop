@@ -11,7 +11,7 @@ use std::thread;
 use std::time::Duration;
 use std::net::{TcpListener, TcpStream};
 use std::io::{Write, BufWriter, BufReader};
-use enigo::{Enigo, KeyboardControllable, Key,  MouseControllable};
+use enigo::{Enigo, KeyboardControllable, Key, MouseControllable, MouseButton};
 use std::io::prelude::*;
 
 
@@ -20,6 +20,7 @@ struct Command {
 	name: char,
 	keyval: u8, // for command K(Key)
 	pos: (i32, i32), // for command M(Mouse)
+	button: i32, // for name M(Mouse)
 }
 
 fn send_images(writer: &mut BufWriter<TcpStream>) {
@@ -85,7 +86,13 @@ fn recv_commands(reader: &mut BufReader<TcpStream>) {
 			},
 			'M' => {
 				println!("command M");
-				enigo.mouse_move_to(command.pos.0, command.pos.1)
+				enigo.mouse_move_to(command.pos.0, command.pos.1);
+				match command.button {
+					1 => enigo.mouse_click(MouseButton::Left),
+					2 => enigo.mouse_click(MouseButton::Middle),
+					3 => enigo.mouse_click(MouseButton::Right),
+					_ => println!("[Error] command.button value")
+				}
 			},
 			_ => {
 				println!("Non command");

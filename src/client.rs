@@ -60,7 +60,7 @@ struct Model {
 #[derive(Msg)]
 enum Msg {
 	Draw,
-	Mouse((f64, f64)),
+	Mouse((f64, f64), u32),
 	Key((u32)),
 	Quit,
 }
@@ -70,6 +70,7 @@ struct Command {
 	name: char,
 	keyval: u8, // for name K(Key)
 	pos: (i32, i32), // for name M(Mouse)
+	button: i32, // for name M(Mouse)
 }
 
 struct Win {
@@ -122,13 +123,14 @@ impl Update for Win {
 					InterpType::Bilinear);
 				self.image.set_from_pixbuf(&pixbuf_small);
 			},
-			Msg::Mouse(pos) => {
-				println!("Mouse {:?}", pos);
+			Msg::Mouse(pos, button) => {
+				println!("Mouse {:?} {:?}", pos, button);
 				let command = Command {
 					name: 'M',
 					keyval: 0,
 					pos: ((pos.0 as f32 / self.model.ratio) as i32,
-						  (pos.1 as f32 / self.model.ratio) as i32)
+						  (pos.1 as f32 / self.model.ratio) as i32),
+					button: button as i32,
 				};
 				let json_str = serde_json::to_string(&command).unwrap() + "\n";
 				println!("Serialized Json = {}", json_str);
@@ -140,6 +142,7 @@ impl Update for Win {
 					name: 'K',
 					keyval: keyval as u8,
 					pos: (0, 0),
+					button: 0,
 				};
 				let json_str = serde_json::to_string(&command).unwrap() + "\n";
 				println!("Serialized Json = {}", json_str);
@@ -171,7 +174,7 @@ impl Widget for Win {
 
 		// Event when mouse button pressed
 		connect!(relm, window, connect_button_press_event(_, event),
-			return(Some(Msg::Mouse(event.get_position())), Inhibit(false)));
+			return(Some(Msg::Mouse(event.get_position(), event.get_button())), Inhibit(false)));
 		// Event when pressing keyboard
 		connect!(relm, window, connect_key_press_event(_, event),
 			return(Some(Msg::Key(event.get_keyval())), Inhibit(false)));
