@@ -18,12 +18,14 @@ use gtk::prelude::*;
 use gtk::{Window, Inhibit, WindowType, Image, ImageExt};
 use gdk_pixbuf::{Pixbuf, Colorspace, InterpType, PixbufExt};
 use gtk::Orientation::Vertical;
+use std::env;
+use std::process;
 
-fn connect() -> TcpStream {
+fn connect(addr: &str) -> TcpStream {
 	println!("connect");
-	match TcpStream::connect("127.0.0.1:8888") {
+	match TcpStream::connect(addr) {
 		Ok(stream) => {
-			println!("Successfully connected to server in port 8888");
+			println!("Successfully connected to server addr:{}", addr);
 			stream
 		},
 		Err(e) => {
@@ -83,13 +85,12 @@ impl Update for Win {
 	// Specify the model used for this widget.
 	type Model = Model;
 	// Specify the model parameter used to init the model.
-	type ModelParam = ();
+	type ModelParam = TcpStream;
 	// Specify the type of the messages sent to the update function.
 	type Msg = Msg;
 
 	// Return the initial model.
-	fn model(_: &Relm<Self>, _: ()) -> Model {
-		let stream = connect();
+	fn model(_: &Relm<Self>, stream: TcpStream) -> Model {
 		Model {
 			stream: stream,
 			width: 1920,
@@ -194,5 +195,13 @@ impl Widget for Win {
 }
 
 fn main() {
-	Win::run(()).expect("Win::run failed");
+	let args: Vec<String> = env::args().collect();
+	if args.len() != 2 {
+		println!("Usage: cargo run --bin client server_addr:port");
+		process::exit(1);
+	}
+
+	let addr = &args[1];
+	let stream = connect(&addr);
+	Win::run(stream).expect("Win::run failed");
 }

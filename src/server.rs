@@ -13,6 +13,8 @@ use std::net::{TcpListener, TcpStream};
 use std::io::{Write, BufWriter, BufReader};
 use enigo::{Enigo, KeyboardControllable, Key, MouseControllable, MouseButton};
 use std::io::prelude::*;
+use std::env;
+use std::process;
 
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -23,10 +25,11 @@ struct Command {
 	button: i32, // for name M(Mouse)
 }
 
-fn send_images(writer: &mut BufWriter<TcpStream>) {
+fn send_images(writer: &mut BufWriter<TcpStream>, fps: u32) {
 
 	let one_second = Duration::new(1, 0);
-	let one_frame = one_second / 10;
+	let one_frame = one_second / fps;
+	println!("frame per second: {}", fps);
 
 	let display = Display::primary().expect("Couldn't find primary display.");
 	let mut capturer = Capturer::new(display).expect("Couldn't begin capture.");
@@ -113,8 +116,19 @@ fn recv_commands(reader: &mut BufReader<TcpStream>) {
 
 fn main() {
 
-	let listener = TcpListener::bind("127.0.0.1:8888").unwrap();
-	println!("Server listening on port 8888");
+	let args: Vec<String> = env::args().collect();
+	if args.len() != 2 && args.len() != 3 {
+		println!("Usage: cargo run --bin server server_addr:port fps");
+		process::exit(1);
+	}
+	let addr = &args[1];
+	let fps = match args.len() {
+		3 => args[2].parse().unwrap(),
+		_ => 30,
+	};
+
+	let listener = TcpListener::bind(addr).unwrap();
+	println!("Server listening on {}", addr);
 
 	for stream in listener.incoming() {
 		match stream {
@@ -125,7 +139,7 @@ fn main() {
 				let mut reader = BufReader::new(stream);
 
 				thread::spawn(move || {
-					send_images(&mut writer);
+					send_images(&mut writer, fps);
 				});
 				thread::spawn(move || {
 					recv_commands(&mut reader);
