@@ -12,7 +12,7 @@ extern crate serde_json;
 
 
 use std::net::TcpStream;
-use std::io::{Read, Write};
+use std::io::Read;
 use relm::{Relm, Update, Widget, interval};
 use gtk::prelude::*;
 use gtk::{Window, Inhibit, WindowType, Image, ImageExt};
@@ -20,6 +20,10 @@ use gdk_pixbuf::{Pixbuf, Colorspace, InterpType, PixbufExt};
 use gtk::Orientation::Vertical;
 use std::env;
 use std::process;
+
+mod command;
+use command::Command;
+
 
 fn connect(addr: &str) -> TcpStream {
 	println!("connect");
@@ -65,14 +69,6 @@ enum Msg {
 	Mouse((f64, f64), u32),
 	Key((u32)),
 	Quit,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-struct Command {
-	name: char,
-	keyval: u8, // for name K(Key)
-	pos: (i32, i32), // for name M(Mouse)
-	button: i32, // for name M(Mouse)
 }
 
 struct Win {
@@ -126,28 +122,19 @@ impl Update for Win {
 			},
 			Msg::Mouse(pos, button) => {
 				println!("Mouse {:?} {:?}", pos, button);
-				let command = Command {
-					name: 'M',
-					keyval: 0,
-					pos: ((pos.0 as f32 / self.model.ratio) as i32,
-						  (pos.1 as f32 / self.model.ratio) as i32),
-					button: button as i32,
-				};
-				let json_str = serde_json::to_string(&command).unwrap() + "\n";
-				println!("Serialized Json = {}", json_str);
-				self.model.stream.write(json_str.as_bytes()).unwrap();
+				let mut command = Command::new();
+				command.set_mouse(
+					((pos.0 as f32 / self.model.ratio) as i32,
+					(pos.1 as f32 / self.model.ratio) as i32),
+					button as i32
+				);
+				command.send(&mut self.model.stream);
 			},
 			Msg::Key(keyval) => {
 				println!("Key {:?}", keyval);
-				let command = Command {
-					name: 'K',
-					keyval: keyval as u8,
-					pos: (0, 0),
-					button: 0,
-				};
-				let json_str = serde_json::to_string(&command).unwrap() + "\n";
-				println!("Serialized Json = {}", json_str);
-				self.model.stream.write(json_str.as_bytes()).unwrap();
+				let mut command = Command::new();
+				command.set_key(keyval as u8);
+				command.send(&mut self.model.stream);
 			},
 			Msg::Quit => gtk::main_quit(),
 		}
