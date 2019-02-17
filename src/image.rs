@@ -12,7 +12,7 @@ use std::net::TcpStream;
 use std::io::{Write, Read, BufWriter};
 use gdk_pixbuf::{Pixbuf, Colorspace, InterpType, PixbufExt};
 
-
+#[allow(dead_code)]
 pub struct Image {
 	buffer: Vec<u8>,
 	width: usize,
@@ -23,6 +23,7 @@ pub struct Image {
 
 impl Image {
 
+	#[allow(dead_code)]
 	fn flip(buffer: scrap::Frame, width: usize, height: usize) -> Vec<u8> {
 		println!("flip");
 		// Flip the BGRA image into a RGBA image.
@@ -43,6 +44,7 @@ impl Image {
 		bitflipped
 	}
 
+	#[allow(dead_code)]
 	pub fn new() -> Image {
 		let display = Display::primary().expect("Couldn't find primary display.");
 		let capturer = Capturer::new(display).expect("Couldn't begin capture.");
@@ -58,6 +60,7 @@ impl Image {
 		}
 	}
 
+	#[allow(dead_code)]
 	pub fn set_one_frame(&mut self, fps: u32) {
 		let one_second = Duration::new(1, 0);
 		let one_frame = one_second / fps;
@@ -65,10 +68,12 @@ impl Image {
 		self.one_frame = one_frame;
 	}
 
+	#[allow(dead_code)]
 	pub fn get_one_frame(&mut self) -> Duration {
 		self.one_frame
 	}
 
+	#[allow(dead_code)]
 	pub fn update(&mut self) {		
 		println!("update");
 		// buffer is BGRA image
@@ -89,11 +94,13 @@ impl Image {
 		self.buffer = bitflipped;
 	}
 
+	#[allow(dead_code)]
 	pub fn send(&mut self, writer: &mut BufWriter<TcpStream>) {
 		println!("write");
 		writer.write(&self.buffer).unwrap();
 	}
 
+	#[allow(dead_code)]
 	pub fn recv(stream: &mut TcpStream, width: i32, height: i32) -> Vec<u8> {
 		println!("recv_images");
 		let bufsize = width * height * 4;
@@ -110,6 +117,7 @@ impl Image {
 		buffer
 	}
 
+	#[allow(dead_code)]
 	pub fn make_pixbuf(buffer: Vec<u8>, width: i32, height: i32) -> Pixbuf {
 		let pixbuf = Pixbuf::new_from_vec(
 			buffer,
@@ -123,6 +131,7 @@ impl Image {
 		pixbuf
 	}
 
+	#[allow(dead_code)]
 	pub fn scale_pixbuf(pixbuf: Pixbuf, width: i32, height: i32, ratio: f32) -> Pixbuf {	
 		let scaled_pixbuf = pixbuf.scale_simple(
 			(width as f32 * ratio) as i32,

@@ -16,6 +16,7 @@ pub struct Command {
 
 impl Command {
 
+	#[allow(dead_code)]
 	pub fn new() -> Command {
 		Command {
 			name: ' ',
@@ -25,6 +26,7 @@ impl Command {
 		}
 	}
 
+	#[allow(dead_code)]
 	pub fn set_mouse(&mut self, pos: (i32, i32), button: i32) {
 		self.name = 'M';
 		self.keyval = 0;
@@ -32,6 +34,7 @@ impl Command {
 		self.button = button;
 	}
 
+	#[allow(dead_code)]
 	pub fn set_key(&mut self, keyval: u8) {
 		self.name = 'K';
 		self.keyval = keyval;
@@ -39,17 +42,20 @@ impl Command {
 		self.button = 0;
 	}
 
+	#[allow(dead_code)]
 	pub fn send(&mut self, stream: &mut TcpStream) {
 		let json_str = serde_json::to_string(&self).unwrap() + "\n";
 		println!("Serialized Json = {}", json_str);
 		stream.write(json_str.as_bytes()).unwrap();
 	}
 
+	#[allow(dead_code)]
 	pub fn recv(buf: String) -> Command {
 		let command: Command = serde_json::from_str(&buf).unwrap();
 		command
 	}
 
+	#[allow(dead_code)]
 	pub fn purse(&self) {
 		let mut enigo = Enigo::new();
 		match self.name {
