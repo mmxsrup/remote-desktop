@@ -12,15 +12,14 @@ extern crate serde_json;
 
 
 use std::net::TcpStream;
-use std::io::Read;
 use relm::{Relm, Update, Widget, interval};
 use gtk::prelude::*;
 use gtk::{Window, Inhibit, WindowType, Image, ImageExt};
-use gdk_pixbuf::{Pixbuf, Colorspace, InterpType, PixbufExt};
 use gtk::Orientation::Vertical;
 use std::env;
 use std::process;
 
+mod image;
 mod command;
 use command::Command;
 
@@ -38,23 +37,6 @@ fn connect(addr: &str) -> TcpStream {
 	}
 }
 
-fn recv_images(model: &mut Model) -> Vec<u8> {
-	println!("recv_images");
-
-	// let mut buffer: Vec<u8> = Vec::with_capacity(w * h * 4);
-	let bufsize = model.width * model.height * 4;
-	let mut buffer = vec![0u8; bufsize as usize];
-
-	match model.stream.read_exact(&mut buffer) {
-		Ok(_) => {
-			println!("Read successfully");
-		}
-		Err(e) => {
-			println!("Error: {}", e);
-		}
-	};
-	buffer
-}
 
 struct Model {
 	stream: TcpStream,
@@ -104,20 +86,13 @@ impl Update for Win {
 		match event {
 			Msg::Draw => {
 				println!("Draw");
-				let buffer = recv_images(&mut self.model);
-
-				let pixbuf = Pixbuf::new_from_vec(
-					buffer,
-					Colorspace::Rgb,
-					true,
-					8,
-					self.model.width,
-					self.model.height,
-					self.model.width * 4);
-				let pixbuf_small = pixbuf.scale_simple(
-					(self.model.width as f32 * self.model.ratio) as i32,
-					(self.model.height as f32 * self.model.ratio) as i32,
-					InterpType::Bilinear);
+				let buffer = image::Image::recv(&mut self.model.stream, self.model.width, self.model.height);
+				let pixbuf = image::Image::make_pixbuf(
+					buffer, self.model.width, self.model.height);
+				let pixbuf_small = image::Image::scale_pixbuf(
+					pixbuf,
+					self.model.width, self.model.height,
+					self.model.ratio);
 				self.image.set_from_pixbuf(&pixbuf_small);
 			},
 			Msg::Mouse(pos, button) => {
