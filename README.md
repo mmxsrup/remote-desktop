@@ -1,11 +1,25 @@
 # remote-desktop
 
-### How to run
-1. Run server
+### Setup
+Install Rust
 ```sh
-cargo run --bin server
+curl https://sh.rustup.rs -sSf | sh
+source ~/.cargo/env
 ```
-2. Run Client
+Install Library
 ```sh
-cargo run --bin client
+sudo apt install libxdo-dev
+sudo apt install libgtk-3-dev
+```
+
+### How to run
+1. Run Server  
+Specify server address and port and frame rate
+```sh
+cargo run --bin server 192.168.0.21:8888 30
+```
+2. Run Client  
+Specify server address and port
+```sh
+cargo run --bin client 192.168.0.21:8888
 ```
